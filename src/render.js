@@ -26,7 +26,7 @@ export function render(vnode, container) {
   }
 }
 
-function mount(vnode, container, isSVG) {
+export function mount(vnode, container, isSVG) {
   const { flags } = vnode;
   if (flags & VNodeFlags.ELEMENT_HTML) {
     // 挂载普通标签

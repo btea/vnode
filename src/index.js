@@ -56,7 +56,7 @@ function handler() {
 // 	])
 // )
 
-// Component
+// 有状态组件
 class MyComponent{
 	render(){
 		return h(
@@ -73,7 +73,7 @@ class MyComponent{
 		)
 	}
 }
-
+// 函数式组件
 function MyFunctionalComponent(){
 	return h(
 		'div',
