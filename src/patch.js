@@ -111,3 +111,32 @@ function patchFragment(prevVNode, nextVNode, container) {
 			nextVNode.el = nextVNode.children[0].el
 	}
 }
+
+// 更新Protal
+function patchPortal(prevVNode, nextVNode) {
+	patchChildren(
+		prevVNode.childFlags,
+		nextVNode.childFlags,
+		prevVNode.children,
+		nextVNode.children,
+		prevVNode.tag  // 注意容器元素是旧的container
+	)
+
+	// 让 nextVNode.el 指向 prevVNode.el
+	nextVNode.el = prevVNode.el
+
+	if (nextVNode.tag !== prevVNode.tag) {
+		const container = typeof nextVNode.el === 'string' ? document.querySelector(nextVNode.tag) : nextVNode.tag
+		switch (nextVNode.childFlags) {
+			case ChildrenFlags.SINGLE_VNODE:
+				container.appendChild(nextVNode.children.el)
+				break
+			case ChildrenFlags.NO_CHILDREN:
+				break
+			default:
+				for (let i = 0; i < nextVNode.children.length; i++) {
+					container.appendChild(nextVNode.children[i].el)
+				}
+		}
+	}
+}

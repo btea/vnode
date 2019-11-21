@@ -695,6 +695,33 @@ function patchFragment(prevVNode, nextVNode, container) {
     default:
       nextVNode.el = nextVNode.children[0].el;
   }
+} // 更新Protal
+
+
+function patchPortal(prevVNode, nextVNode) {
+  (0, _patchChildren.default)(prevVNode.childFlags, nextVNode.childFlags, prevVNode.children, nextVNode.children, prevVNode.tag // 注意容器元素是旧的container
+  ); // 让 nextVNode.el 指向 prevVNode.el
+
+  nextVNode.el = prevVNode.el;
+
+  if (nextVNode.tag !== prevVNode.tag) {
+    var container = typeof nextVNode.el === 'string' ? document.querySelector(nextVNode.tag) : nextVNode.tag;
+
+    switch (nextVNode.childFlags) {
+      case ChildrenFlags.SINGLE_VNODE:
+        container.appendChild(nextVNode.children.el);
+        break;
+
+      case ChildrenFlags.NO_CHILDREN:
+        break;
+
+      default:
+        for (var i = 0; i < nextVNode.children.length; i++) {
+          container.appendChild(nextVNode.children[i].el);
+        }
+
+    }
+  }
 }
 },{"./flags":"src/flags.js","./render":"src/render.js","./patchData":"src/patchData.js","./patchChildren":"src/patchChildren.js"}],"src/render.js":[function(require,module,exports) {
 "use strict";
@@ -1121,10 +1148,24 @@ var funcVnode = (0, _h.h)(MyFunctionalComponent); // render(funcVnode, document.
 
 /**** patch fragment ****/
 // 旧的 VNode
+// const prevVNode = h(Fragment, null, [
+// 	h('p', null, '旧片段子节点 1'),
+// 	h('p', null, '旧片段子节点 2')
+// ])
+// 新的 VNode
+// const nextVNode = h(Fragment, null, [
+// 	h('p', null, '新片段子节点 1'),
+// 	h('p', null, '新片段子节点 2')
+// ])
 
-var prevVNode = (0, _h.h)(_Fragment.Fragment, null, [(0, _h.h)('p', null, '旧片段子节点 1'), (0, _h.h)('p', null, '旧片段子节点 2')]); // 新的 VNode
+/**** patch Portal ****/
 
-var nextVNode = (0, _h.h)(_Fragment.Fragment, null, [(0, _h.h)('p', null, '新片段子节点 1'), (0, _h.h)('p', null, '新片段子节点 2')]);
+var prevVNode = (0, _h.h)(_Portal.Portal, {
+  target: '#old-container'
+}, (0, _h.h)('p', null, '旧的Portal'));
+var nextVNode = (0, _h.h)(_Portal.Portal, {
+  target: '#new-container'
+}, (0, _h.h)('p', null, '新的Portal'));
 (0, _render.render)(prevVNode, document.getElementById('app')); // 2秒后更新
 
 setTimeout(function () {
@@ -1158,7 +1199,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52404" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62203" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
