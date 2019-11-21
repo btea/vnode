@@ -412,7 +412,167 @@ function createTextVNode(text) {
     el: null
   };
 }
-},{"./flags":"src/flags.js","./Portal":"src/Portal.js","./Fragment":"src/Fragment.js"}],"src/patch.js":[function(require,module,exports) {
+},{"./flags":"src/flags.js","./Portal":"src/Portal.js","./Fragment":"src/Fragment.js"}],"src/patchData.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = patchData;
+var domPropsRE = /\[A-Z]|^(?:value|checked|slected|muted)$/;
+
+function patchData(el, key, prevValue, nextValue) {
+  switch (key) {
+    case 'style':
+      // 如果 key 的值是 style，说明是内联样式，逐个将样式规则应用到 el
+      for (var k in nextValue) {
+        el.style[k] = nextValue[k];
+      } // 遍历旧的 VNodeData ，将不存在于新的 VNodeData 中的样式清除
+
+
+      for (var _k in prevValue) {
+        if (!nextValue || !nextValue.hasOwnProperty(_k)) {
+          el.style[_k] = '';
+        }
+      }
+
+      break;
+
+    case 'class':
+      el.className = dynamicClass(nextValue[key]);
+      break;
+
+    default:
+      // 事件处理
+      if (key[0] === 'o' && key[1] === 'n') {
+        // 移除旧事件
+        if (prevValue) {
+          el.addEventListener(key.slice(2), prevValue);
+        } // 添加新事件
+
+
+        if (nextValue) {
+          el.addEventListener(key.slice(2), nextValue);
+        } // 注：如此一来，所有以 'on' 开头的属性都被判定为事件
+
+      } else if (domPropsRE.test(key)) {
+        // 当做 DOM Prop处理
+        el[key] = nextValue;
+      } else {
+        // 当作 Attr 处理
+        el.setAttribute(key, nextValue);
+      }
+
+      break;
+  }
+}
+},{}],"src/patchChildren.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = patchChildren;
+
+var _patch = require("./patch");
+
+var _flags = _interopRequireDefault(require("./flags"));
+
+var _render = require("./render");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var ChildrenFlags = _flags.default.ChildrenFlags;
+
+function patchChildren(prevChildFlags, nextChildFlags, prevChildren, nextChildren, container) {
+  switch (prevChildFlags) {
+    // 旧的 children 是单个子节点
+    case ChildrenFlags.SINGLE_VNODE:
+      switch (nextChildFlags) {
+        case ChildrenFlags.SINGLE_VNODE:
+          // 新的 children 也是单个子节点
+          // 此时，prevChidren 和 nextChildren 都是 VNode 对象
+          (0, _patch.patch)(prevChildren, nextChildren, container);
+          break;
+
+        case ChildrenFlags.NO_CHILDREN:
+          // 新的 children 没有子节点
+          container.removeChild(prevChildren.el);
+          break;
+
+        default:
+          // 新的 children 有多个子节点
+          container.removeChild(prevChildren.el);
+
+          for (var i = 0; i < nextChildren.length; i++) {
+            (0, _render.mount)(nextChildren[i], container);
+          }
+
+          break;
+      }
+
+      break;
+    // 旧的 children 没有子节点
+
+    case ChildrenFlags.NO_CHILDREN:
+      switch (nextChildFlags) {
+        case ChildrenFlags.SINGLE_VNODE:
+          // 新的 children 也是单个子节点
+          (0, _render.mount)(nextChildren, container);
+          break;
+
+        case ChildrenFlags.NO_CHILDREN:
+          // 新的 children 没有子节点
+          break;
+
+        default:
+          // 新的 children 有多个子节点
+          for (var _i = 0; _i < nextChildren.length; _i++) {
+            (0, _render.mount)(nextChildren[_i], container);
+          }
+
+          break;
+      }
+
+      break;
+    // 旧的 children 有多个子节点
+
+    default:
+      switch (nextChildFlags) {
+        case ChildrenFlags.SINGLE_VNODE:
+          // 新的 children 也是单个子节点
+          for (var _i2 = 0; _i2 < prevChildren.length; _i2++) {
+            container.removeChild(prevChildren[_i2].el);
+          }
+
+          (0, _render.mount)(nextChildren, container);
+          break;
+
+        case ChildrenFlags.NO_CHILDREN:
+          // 新的 children 没有子节点
+          for (var _i3 = 0; _i3 < prevChildren.length; _i3++) {
+            container.removeChild(prevChildren[_i3].el);
+          }
+
+          break;
+
+        default:
+          // 新的 children 有多个子节点
+          for (var _i4 = 0; _i4 < prevChildren.length; _i4++) {
+            container.removeChild(prevChildren[_i4].el);
+          }
+
+          for (var k = 0; k < nextChildren.length; k++) {
+            (0, _render.mount)(nextChildren[k], container);
+          }
+
+          break;
+      }
+
+      break;
+  }
+}
+},{"./patch":"src/patch.js","./flags":"src/flags.js","./render":"src/render.js"}],"src/patch.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -420,14 +580,130 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.patch = patch;
 
-function patch() {}
-},{}],"src/render.js":[function(require,module,exports) {
+var _flags = _interopRequireDefault(require("./flags"));
+
+var _render = require("./render");
+
+var _patchData = _interopRequireDefault(require("./patchData"));
+
+var _patchChildren = _interopRequireDefault(require("./patchChildren"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var VNodeFlags = _flags.default.VNodeFlags,
+    ChildrenFlags = _flags.default.ChildrenFlags;
+
+function patch(prevVNode, nextVNode, container) {
+  // 分别拿到新旧 VNode 的类型，即 flags
+  var nextFlags = nextVNode.flags;
+  var prevFlags = prevVNode.flags; // 检查新旧 VNode 的类型是否相同，如果类型不同，则直接调用 replaceVNode 函数替换 VNode
+  // 如果新旧 VNode 的类型相同，则根据不同的类型调用不同的比对函数
+
+  if (prevFlags !== nextFlags) {
+    replaceVNode(prevVNode, nextVNode, container);
+  } else if (nextFlags & VNodeFlags.ELEMENT) {
+    patchElement(prevVNode, nextVNode, container);
+  } else if (nextFlags & VNodeFlags.COMPONENT) {
+    patchComponent(prevVNode, nextVNode, container);
+  } else if (nextFlags & VNodeFlags.TEXT) {
+    patchText(prevVNode, nextVNode);
+  } else if (nextFlags & VNodeFlags.FRAGMENT) {
+    patchFragment(prevVNode, nextVNode, container);
+  } else if (nextFlags & VNodeFlags.PORTAL) {
+    patchPortal(prevVNode, nextVNode);
+  }
+} // 替换 VNode
+
+
+function replaceVNode(prevVNode, nextVNode, container) {
+  // 将旧的 VNode 所渲染的 DOM 从容器中移除
+  container.removeChild(prevVNode.el); // 再把新的 VNode 挂载到容器上
+
+  (0, _render.mount)(nextVNode, container);
+}
+
+function patchElement(prevVNode, nextVNode, container) {
+  // 如果新的 VNode 描述的是不同的标签，则调用 replaceVNode 函数，使用新的 VNode 替换旧的 VNode
+  if (prevVNode.tag !== nextVNode.tag) {
+    replaceVNode(prevVNode, nextVNode, container);
+    return;
+  } // 拿到 el 元素，注意这时要让 nextVNode.el 也引用该元素 
+
+
+  var el = nextVNode.el = prevVNode.el; // 拿到新旧 VNodeData
+
+  var prevData = prevVNode.data;
+  var nextData = nextVNode.data;
+
+  if (nextData) {
+    // 遍历新的 VNodeData ，将旧值和新值传递给 patchData函数
+    for (var key in nextData) {
+      var prevValue = prevData[key];
+      var nextValue = nextData[key];
+      (0, _patchData.default)(el, key, prevValue, nextValue);
+    }
+  }
+
+  if (prevData) {
+    // 遍历旧的 VNodeData，将不存在与新的 VNodeData 中的数据移除
+    for (var _key in prevData) {
+      var _prevValue = prevData[_key];
+
+      if (_prevValue && !nextData.hasOwnProperty(_key)) {
+        // 第四个参数为null代表移除数据
+        (0, _patchData.default)(el, _key, _prevValue, null);
+      }
+    }
+  } // 调用 patchChildren 函数递归更新子节点
+
+
+  (0, _patchChildren.default)(prevVNode.childFlags, // 旧的 VNode 子节点类型
+  nextVNode.childFlags, // 新的 VNode 子节点类型
+  prevVNode.children, // 旧的 VNode 子节点
+  nextVNode.children, // 新的 VNode 子节点
+  el // 当前标签元素，即这些子节点的父节点
+  );
+} // patchText
+
+
+function patchText(prevVNode, nextVNode) {
+  // 拿到文本元素el, 同时让 nextVNode.el 指向该文本元素
+  var el = nextVNode.el = prevVNode.el; // 只有当新旧文本内容不一致时才有必要更新
+
+  if (nextVNode.children !== prevVNode.children) {
+    el.nodeValue = nextVNode.children;
+  }
+}
+
+function patchFragment(prevVNode, nextVNode, container) {
+  // 直接调用 patchChildren 函数更新 新旧节点的子节点即可
+  (0, _patchChildren.default)(prevVNode.childFlags, nextVNode.childFlags, prevVNode.children, nextVNode.children, container); // 如上高亮代码所示，我们通过检查新的片段的 children 类型，如果新的片段的 children 类型是单个子节点，则意味着其 vnode.children 属性的值就是 VNode 对象，
+  // 所以直接将 nextVNode.children.el 赋值给 nextVNode.el 即可。如果新的片段没有子节点，我们知道对于没有子节点的片段我们会使用一个空的文本节点占位，
+  // 而 prevVNode.el 属性引用的就是该空文本节点，所以我们直接通过旧片段的 prevVNode.el 拿到该空文本元素并赋值给新片段的 nextVNode.el 即可。
+  // 如果新的片段的类型是多个子节点，则 nextVNode.children 是一个 VNode 数组，我们会让新片段的 nextVNode.el 属性引用数组中的第一个元素。
+  // 实际上这段逻辑与我们在 mountFragment 函数中所实现的逻辑是一致的。
+
+  switch (nextVNode.childFlags) {
+    case ChildrenFlags.SINGLE_VNODE:
+      nextVNode.el = nextVNode.children.el;
+      break;
+
+    case ChildrenFlags.NO_CHILDREN:
+      nextVNode.el = prevVNode.el;
+      break;
+
+    default:
+      nextVNode.el = nextVNode.children[0].el;
+  }
+}
+},{"./flags":"src/flags.js","./render":"src/render.js","./patchData":"src/patchData.js","./patchChildren":"src/patchChildren.js"}],"src/render.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.render = render;
+exports.mount = mount;
 exports.default = void 0;
 
 var _flags = _interopRequireDefault(require("./flags"));
@@ -758,7 +1034,7 @@ function handler() {
 // 		h('span', null, '我是标题2......')
 // 	])
 // )
-// Component
+// 有状态组件
 
 
 var MyComponent =
@@ -780,7 +1056,8 @@ function () {
   }]);
 
   return MyComponent;
-}();
+}(); // 函数式组件
+
 
 function MyFunctionalComponent() {
   return (0, _h.h)('div', {
@@ -795,10 +1072,64 @@ function MyFunctionalComponent() {
 }
 
 var compVnode = (0, _h.h)(MyComponent);
-console.log(compVnode);
-var funcVnode = (0, _h.h)(MyFunctionalComponent);
-console.log(funcVnode);
-(0, _render.render)(funcVnode, document.getElementById("app") || document.body);
+var funcVnode = (0, _h.h)(MyFunctionalComponent); // render(funcVnode, document.getElementById("app") || document.body)
+// 旧的 VNode
+// const prevVNode = h('div', {
+//   style: {
+//     width: '100px',
+//     height: '100px',
+//     backgroundColor: 'red'
+//   },
+//   onclick: handler,
+//   data: '1234'
+// },
+// h('p', {
+// 	style: {
+// 	  height: '50px',
+// 	  width: '50px'
+// 	}
+// })
+// )
+// 新的 VNode
+// const nextVNode = h('div', {
+//   style: {
+//     width: '100px',
+//     height: '100px',
+//     border: '1px solid green'
+//   },
+//   data: '456'
+// },
+// h('p', {
+// 	style: {
+// 	  height: '50px',
+// 	  width: '50px',
+// 	  background: 'aqua'
+// 	}
+//   })
+// )
+// 旧的 VNode 一个子节点
+// const prevVNode = h('div', null, h('p', null, '只有一个子节点'))
+// 新的 VNode 多个子节点
+// const nextVNode = h('div', null, [
+//   h('p', null, '子节点 1'),
+//   h('p', null, '子节点 2')
+// ])
+// patchText
+// const prevVNode = h('p', null, '旧文本')
+// 新的 VNode
+// const nextVNode = h('p', null, '新文本')
+
+/**** patch fragment ****/
+// 旧的 VNode
+
+var prevVNode = (0, _h.h)(_Fragment.Fragment, null, [(0, _h.h)('p', null, '旧片段子节点 1'), (0, _h.h)('p', null, '旧片段子节点 2')]); // 新的 VNode
+
+var nextVNode = (0, _h.h)(_Fragment.Fragment, null, [(0, _h.h)('p', null, '新片段子节点 1'), (0, _h.h)('p', null, '新片段子节点 2')]);
+(0, _render.render)(prevVNode, document.getElementById('app')); // 2秒后更新
+
+setTimeout(function () {
+  (0, _render.render)(nextVNode, document.getElementById('app'));
+}, 2000);
 },{"./styles.css":"src/styles.css","./h":"src/h.js","./render":"src/render.js","./Fragment":"src/Fragment.js","./Portal":"src/Portal.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -827,7 +1158,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53939" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52404" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

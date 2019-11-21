@@ -93,9 +93,82 @@ function MyFunctionalComponent(){
 	)
 }
 const compVnode = h(MyComponent)
-console.log(compVnode)
 
 const funcVnode = h(MyFunctionalComponent)
-console.log(funcVnode)
-render(funcVnode, document.getElementById("app") || document.body);
+
+// render(funcVnode, document.getElementById("app") || document.body)
+// 旧的 VNode
+// const prevVNode = h('div', {
+//   style: {
+//     width: '100px',
+//     height: '100px',
+//     backgroundColor: 'red'
+//   },
+//   onclick: handler,
+//   data: '1234'
+// },
+// h('p', {
+// 	style: {
+// 	  height: '50px',
+// 	  width: '50px'
+// 	}
+// })
+// )
+
+// 新的 VNode
+// const nextVNode = h('div', {
+//   style: {
+//     width: '100px',
+//     height: '100px',
+//     border: '1px solid green'
+//   },
+//   data: '456'
+// },
+// h('p', {
+// 	style: {
+// 	  height: '50px',
+// 	  width: '50px',
+// 	  background: 'aqua'
+// 	}
+//   })
+// )
+
+// 旧的 VNode 一个子节点
+// const prevVNode = h('div', null, h('p', null, '只有一个子节点'))
+
+// 新的 VNode 多个子节点
+// const nextVNode = h('div', null, [
+//   h('p', null, '子节点 1'),
+//   h('p', null, '子节点 2')
+// ])
+
+
+// patchText
+// const prevVNode = h('p', null, '旧文本')
+
+// 新的 VNode
+// const nextVNode = h('p', null, '新文本')
+
+
+
+/**** patch fragment ****/
+// 旧的 VNode
+const prevVNode = h(Fragment, null, [
+	h('p', null, '旧片段子节点 1'),
+	h('p', null, '旧片段子节点 2')
+])
+  
+// 新的 VNode
+const nextVNode = h(Fragment, null, [
+	h('p', null, '新片段子节点 1'),
+	h('p', null, '新片段子节点 2')
+])
+
+render(prevVNode, document.getElementById('app'))
+
+// 2秒后更新
+setTimeout(() => {
+  render(nextVNode, document.getElementById('app'))
+}, 2000)
+
 
