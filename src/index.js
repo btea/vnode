@@ -57,44 +57,44 @@ function handler() {
 // )
 
 // 有状态组件
-class MyComponent{
-	render(){
-		return h(
-			'div',
-			{
-				style: {
-					background: 'green'
-				}
-			},
-			[
-				h('span', null, '我是组件标题1·······'),
-				h('span', null, '我是组件标题2······')
-			]
-		)
-	}
-}
+// class MyComponent{
+// 	render(){
+// 		return h(
+// 			'div',
+// 			{
+// 				style: {
+// 					background: 'green'
+// 				}
+// 			},
+// 			[
+// 				h('span', null, '我是组件标题1·······'),
+// 				h('span', null, '我是组件标题2······')
+// 			]
+// 		)
+// 	}
+// }
 // 函数式组件
-function MyFunctionalComponent(){
-	return h(
-		'div',
-		{
-			style: {
-				background: 'aqua',
-				height: '100px',
-				width: '100px',
-				borderRadius: '50px',
-				textAlign: 'center'
-			}
-		},
-		[
-			h('span', null, '我是组件标题1······'),
-			h('span', null, '我是组件标题2······')
-		]
-	)
-}
-const compVnode = h(MyComponent)
+// function MyFunctionalComponent(){
+// 	return h(
+// 		'div',
+// 		{
+// 			style: {
+// 				background: 'aqua',
+// 				height: '100px',
+// 				width: '100px',
+// 				borderRadius: '50px',
+// 				textAlign: 'center'
+// 			}
+// 		},
+// 		[
+// 			h('span', null, '我是组件标题1······'),
+// 			h('span', null, '我是组件标题2······')
+// 		]
+// 	)
+// }
+// const compVnode = h(MyComponent)
 
-const funcVnode = h(MyFunctionalComponent)
+// const funcVnode = h(MyFunctionalComponent)
 
 // render(funcVnode, document.getElementById("app") || document.body)
 // 旧的 VNode
@@ -167,27 +167,51 @@ const funcVnode = h(MyFunctionalComponent)
 
 /**** patch Portal ****/
 
-const prevVNode = h(
-	Portal,
-	{
-		target: '#old-container'
-	},
-	h('p', null, '旧的Portal')
-)
+// const prevVNode = h(
+// 	Portal,
+// 	{
+// 		target: '#old-container'
+// 	},
+// 	h('p', null, '旧的Portal')
+// )
 
-const nextVNode = h(
-	Portal,
-	{
-		target: '#new-container'
-	},
-	h('p', null, '新的Portal')
-)
+// const nextVNode = h(
+// 	Portal,
+// 	{
+// 		target: '#new-container'
+// 	},
+// 	h('p', null, '新的Portal')
+// )
 
-render(prevVNode, document.getElementById('app'))
+// render(prevVNode, document.getElementById('app'))
 
-// 2秒后更新
-setTimeout(() => {
-  render(nextVNode, document.getElementById('app'))
-}, 2000)
+// // 2秒后更新
+// setTimeout(() => {
+//   render(nextVNode, document.getElementById('app'))
+// }, 2000)
+
+
+// 组件类
+class MyComponent {
+	constructor(){
+		this.localState = 'one'
+	}
+	// localState = 'one'
+  
+	mounted() {
+	  	setTimeout(() => {
+			this.localState = 'two'
+			this._update()
+	  	}, 2000)
+	}
+  
+	render() {
+	  	return h('div', null, this.localState)
+	}
+  }
+// 有状态组件 VNode
+const compVNode = h(MyComponent)
+console.log(compVNode)
+render(compVNode, document.getElementById('app'))
 
 

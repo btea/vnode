@@ -123,12 +123,31 @@ function mountComponent(vnode, container, isSVG) {
 function mountStatefulComponent(vnode, container, isSVG) {
 	// 1、创建组件实例
 	const instance = new vnode.tag
-	// 2、获取组件产出的 Vnode
-	instance.$vnode = instance.render()
-	// 3、mount挂载
-	mount(instance.$vnode, container, isSVG)
-	// 4、让组件实例的 $el 属性和 vnode.el 属性的值引用组件的根DOM元素
-	instance.$el = vnode.el = instance.$vnode.el
+	instance._update = function() {
+		// 如果instance_mounted为真，说明组件已经挂载，应该执行更新操作
+		if (instance._mounted) {
+			// 1、拿到旧的VNode
+			const prevVNode = instance.$vnode
+			// 2、重新渲染VNode
+			const nextVNode = (instance.$vnode = instance.render())
+			// 3、patch更新
+			patch(prevVNode, nextVNode, prevVNode.el.parentNode)
+			// 4、更新 vnode.el 和 $el
+			instance.$el = vnode.el = instance.$vnode.el
+		} else {
+			// 1、渲染 Vnode
+			instance.$vnode = instance.render()
+			// 2、mount挂载
+			mount(instance.$vnode, container, isSVG)
+			// 3、组件已挂载的标识
+			instance._mounted = true
+			// 4、让组件实例的 $el 属性和 vnode.el 属性的值引用组件的根DOM元素
+			instance.$el = vnode.el = instance.$vnode.el
+			// 5、调用 mounted 钩子
+			instance.mounted && instance.mounted()
+		}
+	}
+	instance._update()
 }
 
 // 挂载函数式组件
@@ -178,8 +197,7 @@ function mountPortal(vnode, container, isSVG) {
 	const {tag, children, childFlags} = vnode
 	// 获取挂载点
 	const target = typeof tag === 'string' ? document.querySelector(tag) : tag
-
-	if (childFlags & childFlags.SINGLE_VNODE) {
+	if (childFlags & ChildrenFlags.SINGLE_VNODE) {
 		// 将children挂载到target上，而非container
 		mount(children, target)
 	} else if (childFlags & ChildrenFlags.MULTIPLE_VNODES) {
@@ -197,35 +215,35 @@ function mountPortal(vnode, container, isSVG) {
 }
 
 function dynamicClass(className) {
-  if (typeof className === "string") {
-    return className;
-  }
-  if (typeof className === "object") {
-    if (Array.isArray(className)) {
-      let str = "";
-      for (let i = 0; i < className.length; i++) {
-        if (typeof className[i] === "string") {
-          str += className[i] + " ";
-        } else if (typeof className[i] === "object") {
-          str += dynamicClass(className[i]);
-        }
-      }
-      return str || "";
-    } else {
-      let str = "";
-      for (let key in className) {
-        if (typeof className[key] === "boolean" && className[key]) {
-          str += key + " ";
-        } else if (typeof className[key] === "object") {
-          str += dynamicClass(className[key]);
-        }
-      }
-      return str || "";
-    }
-  }
-  return "";
+	if (typeof className === "string") {
+		return className;
+	}
+	if (typeof className === "object") {
+		if (Array.isArray(className)) {
+		let str = "";
+		for (let i = 0; i < className.length; i++) {
+			if (typeof className[i] === "string") {
+			str += className[i] + " ";
+			} else if (typeof className[i] === "object") {
+			str += dynamicClass(className[i]);
+			}
+		}
+		return str || "";
+		} else {
+		let str = "";
+		for (let key in className) {
+			if (typeof className[key] === "boolean" && className[key]) {
+			str += key + " ";
+			} else if (typeof className[key] === "object") {
+			str += dynamicClass(className[key]);
+			}
+		}
+		return str || "";
+		}
+	}
+	return "";
 }
 
 export default {
-  render
+  	render
 };

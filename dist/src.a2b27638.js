@@ -408,8 +408,7 @@ function createTextVNode(text) {
     // 纯文本类型的 VNode，其children属性存储的是与之相符的文本内容
     children: text,
     // 文本节点没有子节点
-    childFlags: VNodeFlags.NO_CHILDREN,
-    el: null
+    childFlags: VNodeFlags.NO_CHILDREN
   };
 }
 },{"./flags":"src/flags.js","./Portal":"src/Portal.js","./Fragment":"src/Fragment.js"}],"src/patchData.js":[function(require,module,exports) {
@@ -871,13 +870,34 @@ function mountComponent(vnode, container, isSVG) {
 
 function mountStatefulComponent(vnode, container, isSVG) {
   // 1、创建组件实例
-  var instance = new vnode.tag(); // 2、获取组件产出的 Vnode
+  var instance = new vnode.tag();
 
-  instance.$vnode = instance.render(); // 3、mount挂载
+  instance._update = function () {
+    // 如果instance_mounted为真，说明组件已经挂载，应该执行更新操作
+    if (instance._mounted) {
+      // 1、拿到旧的VNode
+      var prevVNode = instance.$vnode; // 2、重新渲染VNode
 
-  mount(instance.$vnode, container, isSVG); // 4、让组件实例的 $el 属性和 vnode.el 属性的值引用组件的根DOM元素
+      var nextVNode = instance.$vnode = instance.render(); // 3、patch更新
 
-  instance.$el = vnode.el = instance.$vnode.el;
+      (0, _patch.patch)(prevVNode, nextVNode, prevVNode.el.parentNode); // 4、更新 vnode.el 和 $el
+
+      instance.$el = vnode.el = instance.$vnode.el;
+    } else {
+      // 1、渲染 Vnode
+      instance.$vnode = instance.render(); // 2、mount挂载
+
+      mount(instance.$vnode, container, isSVG); // 3、组件已挂载的标识
+
+      instance._mounted = true; // 4、让组件实例的 $el 属性和 vnode.el 属性的值引用组件的根DOM元素
+
+      instance.$el = vnode.el = instance.$vnode.el; // 5、调用 mounted 钩子
+
+      instance.mounted && instance.mounted();
+    }
+  };
+
+  instance._update();
 } // 挂载函数式组件
 
 
@@ -935,7 +955,7 @@ function mountPortal(vnode, container, isSVG) {
 
   var target = typeof tag === 'string' ? document.querySelector(tag) : tag;
 
-  if (childFlags & childFlags.SINGLE_VNODE) {
+  if (childFlags & ChildrenFlags.SINGLE_VNODE) {
     // 将children挂载到target上，而非container
     mount(children, target);
   } else if (childFlags & ChildrenFlags.MULTIPLE_VNODES) {
@@ -1062,44 +1082,44 @@ function handler() {
 // 	])
 // )
 // 有状态组件
-
-
-var MyComponent =
-/*#__PURE__*/
-function () {
-  function MyComponent() {
-    _classCallCheck(this, MyComponent);
-  }
-
-  _createClass(MyComponent, [{
-    key: "render",
-    value: function render() {
-      return (0, _h.h)('div', {
-        style: {
-          background: 'green'
-        }
-      }, [(0, _h.h)('span', null, '我是组件标题1·······'), (0, _h.h)('span', null, '我是组件标题2······')]);
-    }
-  }]);
-
-  return MyComponent;
-}(); // 函数式组件
-
-
-function MyFunctionalComponent() {
-  return (0, _h.h)('div', {
-    style: {
-      background: 'aqua',
-      height: '100px',
-      width: '100px',
-      borderRadius: '50px',
-      textAlign: 'center'
-    }
-  }, [(0, _h.h)('span', null, '我是组件标题1······'), (0, _h.h)('span', null, '我是组件标题2······')]);
-}
-
-var compVnode = (0, _h.h)(MyComponent);
-var funcVnode = (0, _h.h)(MyFunctionalComponent); // render(funcVnode, document.getElementById("app") || document.body)
+// class MyComponent{
+// 	render(){
+// 		return h(
+// 			'div',
+// 			{
+// 				style: {
+// 					background: 'green'
+// 				}
+// 			},
+// 			[
+// 				h('span', null, '我是组件标题1·······'),
+// 				h('span', null, '我是组件标题2······')
+// 			]
+// 		)
+// 	}
+// }
+// 函数式组件
+// function MyFunctionalComponent(){
+// 	return h(
+// 		'div',
+// 		{
+// 			style: {
+// 				background: 'aqua',
+// 				height: '100px',
+// 				width: '100px',
+// 				borderRadius: '50px',
+// 				textAlign: 'center'
+// 			}
+// 		},
+// 		[
+// 			h('span', null, '我是组件标题1······'),
+// 			h('span', null, '我是组件标题2······')
+// 		]
+// 	)
+// }
+// const compVnode = h(MyComponent)
+// const funcVnode = h(MyFunctionalComponent)
+// render(funcVnode, document.getElementById("app") || document.body)
 // 旧的 VNode
 // const prevVNode = h('div', {
 //   style: {
@@ -1159,18 +1179,63 @@ var funcVnode = (0, _h.h)(MyFunctionalComponent); // render(funcVnode, document.
 // ])
 
 /**** patch Portal ****/
+// const prevVNode = h(
+// 	Portal,
+// 	{
+// 		target: '#old-container'
+// 	},
+// 	h('p', null, '旧的Portal')
+// )
+// const nextVNode = h(
+// 	Portal,
+// 	{
+// 		target: '#new-container'
+// 	},
+// 	h('p', null, '新的Portal')
+// )
+// render(prevVNode, document.getElementById('app'))
+// // 2秒后更新
+// setTimeout(() => {
+//   render(nextVNode, document.getElementById('app'))
+// }, 2000)
+// 组件类
 
-var prevVNode = (0, _h.h)(_Portal.Portal, {
-  target: '#old-container'
-}, (0, _h.h)('p', null, '旧的Portal'));
-var nextVNode = (0, _h.h)(_Portal.Portal, {
-  target: '#new-container'
-}, (0, _h.h)('p', null, '新的Portal'));
-(0, _render.render)(prevVNode, document.getElementById('app')); // 2秒后更新
 
-setTimeout(function () {
-  (0, _render.render)(nextVNode, document.getElementById('app'));
-}, 2000);
+var MyComponent =
+/*#__PURE__*/
+function () {
+  function MyComponent() {
+    _classCallCheck(this, MyComponent);
+
+    this.localState = 'one';
+  } // localState = 'one'
+
+
+  _createClass(MyComponent, [{
+    key: "mounted",
+    value: function mounted() {
+      var _this = this;
+
+      setTimeout(function () {
+        _this.localState = 'two';
+
+        _this._update();
+      }, 2000);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return (0, _h.h)('div', null, this.localState);
+    }
+  }]);
+
+  return MyComponent;
+}(); // 有状态组件 VNode
+
+
+var compVNode = (0, _h.h)(MyComponent);
+console.log(compVNode);
+(0, _render.render)(compVNode, document.getElementById('app'));
 },{"./styles.css":"src/styles.css","./h":"src/h.js","./render":"src/render.js","./Fragment":"src/Fragment.js","./Portal":"src/Portal.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -1199,7 +1264,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62203" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56152" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
