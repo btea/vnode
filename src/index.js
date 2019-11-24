@@ -210,8 +210,33 @@ class MyComponent {
 	}
   }
 // 有状态组件 VNode
-const compVNode = h(MyComponent)
+// const compVNode = h(MyComponent)
+
+
+/****    $props   ****/
+class ChildComponent{
+	render() {
+		// 通过 this.$props.text访问外部数据
+		return h('div', null, this.$props.text)
+	}
+}
+class ParentComponent{
+	// localState = 'one'
+	constructor(){
+		this.localState = 'one'
+	}
+
+	render() {
+		const childCompVNode = h(ChildComponent, {
+			text: this.localState
+		})
+		return childCompVNode
+	}
+}
+
+const compVNode = h(ParentComponent)
 console.log(compVNode)
+return
 render(compVNode, document.getElementById('app'))
 
 

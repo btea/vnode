@@ -123,6 +123,10 @@ function mountComponent(vnode, container, isSVG) {
 function mountStatefulComponent(vnode, container, isSVG) {
 	// 1、创建组件实例
 	const instance = new vnode.tag
+
+	// 初始化 props
+	instance.$props = vnode.data
+
 	instance._update = function() {
 		// 如果instance_mounted为真，说明组件已经挂载，应该执行更新操作
 		if (instance._mounted) {

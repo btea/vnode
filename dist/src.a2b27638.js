@@ -870,7 +870,9 @@ function mountComponent(vnode, container, isSVG) {
 
 function mountStatefulComponent(vnode, container, isSVG) {
   // 1、创建组件实例
-  var instance = new vnode.tag();
+  var instance = new vnode.tag(); // 初始化 props
+
+  instance.$props = vnode.data;
 
   instance._update = function () {
     // 如果instance_mounted为真，说明组件已经挂载，应该执行更新操作
@@ -1231,10 +1233,55 @@ function () {
 
   return MyComponent;
 }(); // 有状态组件 VNode
+// const compVNode = h(MyComponent)
+
+/****    $props   ****/
 
 
-var compVNode = (0, _h.h)(MyComponent);
+var ChildComponent =
+/*#__PURE__*/
+function () {
+  function ChildComponent() {
+    _classCallCheck(this, ChildComponent);
+  }
+
+  _createClass(ChildComponent, [{
+    key: "render",
+    value: function render() {
+      // 通过 this.$props.text访问外部数据
+      return (0, _h.h)('div', null, this.$props.text);
+    }
+  }]);
+
+  return ChildComponent;
+}();
+
+var ParentComponent =
+/*#__PURE__*/
+function () {
+  // localState = 'one'
+  function ParentComponent() {
+    _classCallCheck(this, ParentComponent);
+
+    this.localState = 'one';
+  }
+
+  _createClass(ParentComponent, [{
+    key: "render",
+    value: function render() {
+      var childCompVNode = (0, _h.h)(ChildComponent, {
+        text: this.localState
+      });
+      return childCompVNode;
+    }
+  }]);
+
+  return ParentComponent;
+}();
+
+var compVNode = (0, _h.h)(ParentComponent);
 console.log(compVNode);
+return;
 (0, _render.render)(compVNode, document.getElementById('app'));
 },{"./styles.css":"src/styles.css","./h":"src/h.js","./render":"src/render.js","./Fragment":"src/Fragment.js","./Portal":"src/Portal.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -1264,7 +1311,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56152" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65245" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
