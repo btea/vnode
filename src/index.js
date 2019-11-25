@@ -297,27 +297,49 @@ class MyComponent {
 
 /****   函数式组件更新    ****/
 // 子组件----函数式组件
-function MyFunctionalCom(props) {
-	return h('div', null, props.text)
-}
-// 父组件的 render 函数中渲染了 MyFunctionalCom 子组件
-class ParentComponent{
-	constructor() {
-		this.localState = 'one'
-	}
-	mounted() {
-		setTimeout(() => {
-			this.localState = 'two'
-			this._update()
-		}, 2000)
-	}
-	render() {
-		return h(MyFunctionalCom, {
-			text: this.localState
-		})
-	}
-}
-const compVNode = h(ParentComponent)
-render(compVNode, document.getElementById('app'))
+// function MyFunctionalCom(props) {
+// 	return h('div', null, props.text)
+// }
+// // 父组件的 render 函数中渲染了 MyFunctionalCom 子组件
+// class ParentComponent{
+// 	constructor() {
+// 		this.localState = 'one'
+// 	}
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.localState = 'two'
+// 			this._update()
+// 		}, 2000)
+// 	}
+// 	render() {
+// 		return h(MyFunctionalCom, {
+// 			text: this.localState
+// 		})
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+// render(compVNode, document.getElementById('app'))
 
 
+
+/****   diff   ****/
+// 旧的 VNode
+const prevVNode = h('div', null, [
+	h('p', null, '旧的子节点1'),
+	h('p', null, '旧的子节点2')
+  ])
+  
+  // 新的 VNode
+  const nextVNode = h('div', null, [
+	h('p', null, '新的子节点1'),
+	h('p', null, '新的子节点2'),
+	h('p', null, '新的子节点3')
+  ])
+  
+  render(prevVNode, document.getElementById('app'))
+  
+  // 2秒后更新
+  setTimeout(() => {
+	render(nextVNode, document.getElementById('app'))
+  }, 2000)
+  

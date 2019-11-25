@@ -376,6 +376,7 @@ function h(tag) {
     flags: flags,
     tag: tag,
     data: data,
+    key: data && data.key ? data.key : null,
     children: children,
     childFlags: childFlags,
     el: null
@@ -556,13 +557,36 @@ function patchChildren(prevChildFlags, nextChildFlags, prevChildren, nextChildre
           break;
 
         default:
-          // 新的 children 有多个子节点
-          for (var _i4 = 0; _i4 < prevChildren.length; _i4++) {
-            container.removeChild(prevChildren[_i4].el);
-          }
+          // 新的 children 有多个子节点   DIFF
+          // 遍历旧的子节点，将其全部移除
+          // for (let i = 0; i < prevChildren.length; i++) {
+          // 	container.removeChild(prevChildren[i].el)
+          // }
+          // // 遍历新的子节点，将其全部添加
+          // for (let k = 0; k < nextChildren.length; k++) {
+          // 	mount(nextChildren[k], container)
+          // }
+          // 获取公共长度，取新旧 children 长度较小那一个
+          var prevLen = prevChildren.length;
+          var nextLen = nextChildren.length;
+          var commonLength = prevLen > nextLen ? nextLen : prevLen;
 
-          for (var k = 0; k < nextChildren.length; k++) {
-            (0, _render.mount)(nextChildren[k], container);
+          for (var _i4 = 0; _i4 < commonLength; _i4++) {
+            (0, _patch.patch)(prevChildren[_i4], nextChildren[_i4], container);
+          } // 如果nextLen 大于 prevLen,将多出来的元素添加
+
+
+          if (nextLen > prevLen) {
+            for (var _i5 = commonLength; _i5 < nextLen; _i5++) {
+              (0, _render.mount)(nextChildren[_i5], container);
+            }
+          } else if (prevLen > nextLen) {
+            // 如果 prevLen > nextLen, 将多出的元素移除
+            for (var _i6 = commonLength; _i6 < prevLen; _i6++) {
+              container.removeChild(prevChildren[_i6].el);
+            }
+
+            container.removeChild();
           }
 
           break;
@@ -616,7 +640,14 @@ function patch(prevVNode, nextVNode, container) {
 
 function replaceVNode(prevVNode, nextVNode, container) {
   // 将旧的 VNode 所渲染的 DOM 从容器中移除
-  container.removeChild(prevVNode.el); // 再把新的 VNode 挂载到容器上
+  container.removeChild(prevVNode.el); // 如果将要被移除的 VNode 类型是组件，则需要调用该组件实例的 unmounted 函数
+
+  if (prevVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+    // 类型为有状态组件的 VNode， 其children属性被用来存储组件实例对象
+    var instance = prevVNode.children;
+    instance.unmounted && instance.unmounted();
+  } // 再把新的 VNode 挂载到容器上
+
 
   (0, _render.mount)(nextVNode, container);
 }
@@ -726,15 +757,29 @@ function patchPortal(prevVNode, nextVNode) {
 
 
 function patchComponent(prevVNode, nextVNode, container) {
-  // 检查组件是否是有状态组件
-  if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
-    // 1、获取组件实例
-    var instance = nextVNode.children = prevVNode.children; // 2、更新props
+  // 父组件props改变导致子组件更新，可能更新前后渲染不同子组件
+  // tag 属性的值是组件类，通过比较新旧组件类是否相等来判断是否相同的组件
+  if (prevVNode.tag !== nextVNode.tag) {
+    replaceVNode(prevVNode, nextVNode, container);
+  } // 检查组件是否是有状态组件
+  else if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+      // 1、获取组件实例
+      var instance = nextVNode.children = prevVNode.children; // 2、更新props
 
-    instance.$props = nextVNode.data; // 3、更新组件
+      instance.$props = nextVNode.data; // 3、更新组件
 
-    instance._update();
-  }
+      instance._update();
+    } else {
+      // 更新函数式组件
+      // 通过 prevVNode.handle 拿到 handle 对象
+      var handle = nextVNode.handle = prevVNode.handle; // 更新handle对象
+
+      handle.prev = prevVNode;
+      handle.next = nextVNode;
+      handle.container = container; // 调用 update 函数完成更新
+
+      handle.update();
+    }
 }
 },{"./flags":"src/flags.js","./render":"src/render.js","./patchData":"src/patchData.js","./patchChildren":"src/patchChildren.js"}],"src/render.js":[function(require,module,exports) {
 "use strict";
@@ -890,12 +935,47 @@ function mountStatefulComponent(vnode, container, isSVG) {
 
 
 function mountFunctionalComponent(vnode, container, isSVG) {
-  // 获取vnode
-  var $vnode = vnode.tag(); // 挂载
+  // 获取 props
+  // const props = vnode.data
+  // // 获取vnode
+  // const $vnode = (vnode.children =  vnode.tag(props))
+  // // 挂载
+  // mount($vnode, container, isSVG)
+  // // el元素引用该组件的根元素
+  // vnode.el = $vnode.el
+  // 在函数式组件类型的 vnode 上添加 handle 属性，它是一个对象
+  vnode.handle = {
+    prev: null,
+    next: vnode,
+    container: container,
+    update: function update() {
+      if (vnode.handle.prev) {
+        // 更新
+        // prevVNode 是旧的组件 VNode，nextVNode 是新的组件 VNode
+        var prevVNode = vnode.handle.prev;
+        var nextVNode = vnode.handle.next; // prevTree 是组件产出 旧的 VNode
 
-  mount($vnode, container, isSVG); // el元素引用该组件的根元素
+        var prevTree = prevVNode.children; // 更新 props 数据
 
-  vnode.el = $vnode.el;
+        var props = nextVNode.data; // nextTree是组件产出的新的 VNode
+
+        var nextTree = nextVNode.children = nextVNode.tag(props); // 调用patch函数更新
+
+        (0, _patch.patch)(prevTree, nextTree, vnode.handle.container);
+      } else {
+        // 初始化 props
+        var _props = vnode.data; // 获取 VNode
+
+        var $vnode = vnode.children = vnode.tag(_props); // 挂载
+
+        mount($vnode, container, isSVG); // el属性引用该组件的根元素
+
+        vnode.el = $vnode.el;
+      }
+    }
+  }; // 立即调用 vnode.handle.update完成初次挂载
+
+  vnode.handle.update();
 } // 挂载纯文本
 
 
@@ -1244,63 +1324,95 @@ function () {
 
 /****    被动更新    ****/
 // 被动更新指的是由外部状态变化而引起的更新操作，通常父组件自身状态的变化可能会引起子组件的更新，
+// class ChildComponent{
+// 	render() {
+// 		return h('div', null, this.$props.text)
+// 	}
+// }
+// class ParentComponent{
+// 	constructor(){
+// 		this.localState = 'one'
+// 	}
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.localState = 'two'
+// 			this._update()
+// 		}, 2000)
+// 	}
+// 	render() {
+// 		const childCompVNode = h(ChildComponent, {
+// 			text: this.localState
+// 		})
+// 		console.log(childCompVNode)
+// 		return childCompVNode
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+
+/****   替换子组件   ****/
+// class Component1{
+// 	render() {
+// 		return h('div', null, '这是组件1')
+// 	}
+// }
+// class Component2{
+// 	render() {
+// 		return h('div', null, '这是组件2')
+// 	}
+// }
+// class ParentComponent{
+// 	constructor() {
+// 		this.isTrue = true
+// 	}
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.isTrue = false
+// 			this._update()
+// 		}, 2000)
+// 	}
+// 	render() {
+// 		return this.isTrue ? h(Component1) : h(Component2)
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+
+/****   函数式组件更新    ****/
+// 子组件----函数式组件
+// function MyFunctionalCom(props) {
+// 	return h('div', null, props.text)
+// }
+// // 父组件的 render 函数中渲染了 MyFunctionalCom 子组件
+// class ParentComponent{
+// 	constructor() {
+// 		this.localState = 'one'
+// 	}
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.localState = 'two'
+// 			this._update()
+// 		}, 2000)
+// 	}
+// 	render() {
+// 		return h(MyFunctionalCom, {
+// 			text: this.localState
+// 		})
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+// render(compVNode, document.getElementById('app'))
+
+/****   diff   ****/
+// 旧的 VNode
 
 
-var ChildComponent =
-/*#__PURE__*/
-function () {
-  function ChildComponent() {
-    _classCallCheck(this, ChildComponent);
-  }
+var prevVNode = (0, _h.h)('div', null, [(0, _h.h)('p', null, '旧的子节点1'), (0, _h.h)('p', null, '旧的子节点2')]); // 新的 VNode
 
-  _createClass(ChildComponent, [{
-    key: "render",
-    value: function render() {
-      return (0, _h.h)('div', null, this.$props.text);
-    }
-  }]);
+var nextVNode = (0, _h.h)('div', null, [(0, _h.h)('p', null, '新的子节点1'), (0, _h.h)('p', null, '新的子节点2'), (0, _h.h)('p', null, '新的子节点3')]);
+(0, _render.render)(prevVNode, document.getElementById('app')); // 2秒后更新
 
-  return ChildComponent;
-}();
-
-var ParentComponent =
-/*#__PURE__*/
-function () {
-  function ParentComponent() {
-    _classCallCheck(this, ParentComponent);
-
-    this.localState = 'one';
-  }
-
-  _createClass(ParentComponent, [{
-    key: "mounted",
-    value: function mounted() {
-      var _this2 = this;
-
-      setTimeout(function () {
-        _this2.localState = 'two';
-
-        _this2._update();
-      }, 2000);
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      var childCompVNode = (0, _h.h)(ChildComponent, {
-        text: this.localState
-      });
-      console.log(childCompVNode);
-      return childCompVNode;
-    }
-  }]);
-
-  return ParentComponent;
-}();
-
-var compVNode = (0, _h.h)(ParentComponent); // console.log(compVNode)
-// return
-
-(0, _render.render)(compVNode, document.getElementById('app'));
+setTimeout(function () {
+  (0, _render.render)(nextVNode, document.getElementById('app'));
+}, 2000);
 },{"./styles.css":"src/styles.css","./h":"src/h.js","./render":"src/render.js","./Fragment":"src/Fragment.js","./Portal":"src/Portal.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';

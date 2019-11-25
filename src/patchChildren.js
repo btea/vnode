@@ -67,13 +67,39 @@ export default function patchChildren(
 					}
 					break
 				default:
-					// 新的 children 有多个子节点
-					for (let i = 0; i < prevChildren.length; i++) {
-						container.removeChild(prevChildren[i].el)
+					// 新的 children 有多个子节点   DIFF
+					// 遍历旧的子节点，将其全部移除
+					// for (let i = 0; i < prevChildren.length; i++) {
+					// 	container.removeChild(prevChildren[i].el)
+					// }
+					// // 遍历新的子节点，将其全部添加
+					// for (let k = 0; k < nextChildren.length; k++) {
+					// 	mount(nextChildren[k], container)
+					// }
+
+					// 获取公共长度，取新旧 children 长度较小那一个
+					const prevLen = prevChildren.length
+					const nextLen = nextChildren.length
+					const commonLength = prevLen > nextLen ? nextLen : prevLen
+					for (let i = 0; i < commonLength; i++) {
+						patch(prevChildren[i], nextChildren[i], container)
 					}
-					for (let k = 0; k < nextChildren.length; k++) {
-						mount(nextChildren[k], container)
+					// 如果nextLen 大于 prevLen,将多出来的元素添加
+					if (nextLen > prevLen) {
+						for (let i = commonLength; i < nextLen; i++) {
+							mount(nextChildren[i], container)
+						}
+					} else if (prevLen > nextLen) {
+						// 如果 prevLen > nextLen, 将多出的元素移除
+						for (let i = commonLength; i < prevLen; i++) {
+							container.removeChild(prevChildren[i].el)
+						}
+						container.removeChild()
 					}
+
+
+
+
 					break
 			}
 			break
