@@ -144,6 +144,11 @@ function patchPortal(prevVNode, nextVNode) {
 
 // 更新 Component
 function patchComponent(prevVNode, nextVNode, container) {
+	// 父组件props改变导致子组件更新，可能更新前后渲染不同子组件
+	// tag 属性的值是组件类，通过比较新旧组件类是否相等来判断是否相同的组件
+	if (prevVNode.tag !== nextVNode.tag) {
+		replaceVNode(prevVNode, nextVNode, container)
+	}
 	// 检查组件是否是有状态组件
 	if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
 		// 1、获取组件实例

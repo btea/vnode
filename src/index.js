@@ -239,35 +239,60 @@ class MyComponent {
 
 /****    被动更新    ****/
 // 被动更新指的是由外部状态变化而引起的更新操作，通常父组件自身状态的变化可能会引起子组件的更新，
-class ChildComponent{
+// class ChildComponent{
+// 	render() {
+// 		return h('div', null, this.$props.text)
+// 	}
+// }
+// class ParentComponent{
+// 	constructor(){
+// 		this.localState = 'one'
+// 	}
+
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.localState = 'two'
+// 			this._update()
+// 		}, 2000)
+// 	}
+
+// 	render() {
+// 		const childCompVNode = h(ChildComponent, {
+// 			text: this.localState
+// 		})
+// 		console.log(childCompVNode)
+// 		return childCompVNode
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+
+
+/****   替换子组件   ****/
+class Component1{
 	render() {
-		return h('div', null, this.$props.text)
+		return h('div', null, '这是组件1')
+	}
+}
+class Component2{
+	render() {
+		return h('div', null, '这是组件2')
 	}
 }
 class ParentComponent{
-	constructor(){
-		this.localState = 'one'
+	constructor() {
+		this.isTrue = true
 	}
-
 	mounted() {
 		setTimeout(() => {
-			this.localState = 'two'
+			this.isTrue = false
 			this._update()
 		}, 2000)
 	}
-
 	render() {
-		const childCompVNode = h(ChildComponent, {
-			text: this.localState
-		})
-		console.log(childCompVNode)
-		return childCompVNode
+		return this.isTrue ? h(Component1) : h(Component2)
 	}
 }
 const compVNode = h(ParentComponent)
-// console.log(compVNode)
-// return
-
 render(compVNode, document.getElementById('app'))
 
 
