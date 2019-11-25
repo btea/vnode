@@ -8,7 +8,6 @@ export function patch(prevVNode, nextVNode, container) {
 	// 分别拿到新旧 VNode 的类型，即 flags
 	const nextFlags = nextVNode.flags
 	const prevFlags = prevVNode.flags
-  
 	// 检查新旧 VNode 的类型是否相同，如果类型不同，则直接调用 replaceVNode 函数替换 VNode
 	// 如果新旧 VNode 的类型相同，则根据不同的类型调用不同的比对函数
 	if (prevFlags !== nextFlags) {
@@ -30,6 +29,12 @@ export function patch(prevVNode, nextVNode, container) {
 function replaceVNode(prevVNode, nextVNode, container) {
 	// 将旧的 VNode 所渲染的 DOM 从容器中移除
 	container.removeChild(prevVNode.el)
+	// 如果将要被移除的 VNode 类型是组件，则需要调用该组件实例的 unmounted 函数
+	if (prevVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+		// 类型为有状态组件的 VNode， 其children属性被用来存储组件实例对象
+		const instance = prevVNode.children
+		instance.unmounted && instance.unmounted()
+	}
 	// 再把新的 VNode 挂载到容器上
 	mount(nextVNode, container)
 }
@@ -150,12 +155,22 @@ function patchComponent(prevVNode, nextVNode, container) {
 		replaceVNode(prevVNode, nextVNode, container)
 	}
 	// 检查组件是否是有状态组件
-	if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+	else if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
 		// 1、获取组件实例
 		const instance = (nextVNode.children = prevVNode.children)
 		// 2、更新props
 		instance.$props = nextVNode.data
 		// 3、更新组件
 		instance._update()
+	} else {
+		// 更新函数式组件
+		// 通过 prevVNode.handle 拿到 handle 对象
+		const handle = (nextVNode.handle = prevVNode.handle)
+		// 更新handle对象
+		handle.prev = prevVNode
+		handle.next = nextVNode
+		handle.container = container
+		// 调用 update 函数完成更新
+		handle.update()
 	}
 }

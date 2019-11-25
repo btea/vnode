@@ -268,28 +268,53 @@ class MyComponent {
 
 
 /****   替换子组件   ****/
-class Component1{
-	render() {
-		return h('div', null, '这是组件1')
-	}
+// class Component1{
+// 	render() {
+// 		return h('div', null, '这是组件1')
+// 	}
+// }
+// class Component2{
+// 	render() {
+// 		return h('div', null, '这是组件2')
+// 	}
+// }
+// class ParentComponent{
+// 	constructor() {
+// 		this.isTrue = true
+// 	}
+// 	mounted() {
+// 		setTimeout(() => {
+// 			this.isTrue = false
+// 			this._update()
+// 		}, 2000)
+// 	}
+// 	render() {
+// 		return this.isTrue ? h(Component1) : h(Component2)
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+
+
+/****   函数式组件更新    ****/
+// 子组件----函数式组件
+function MyFunctionalCom(props) {
+	return h('div', null, props.text)
 }
-class Component2{
-	render() {
-		return h('div', null, '这是组件2')
-	}
-}
+// 父组件的 render 函数中渲染了 MyFunctionalCom 子组件
 class ParentComponent{
 	constructor() {
-		this.isTrue = true
+		this.localState = 'one'
 	}
 	mounted() {
 		setTimeout(() => {
-			this.isTrue = false
+			this.localState = 'two'
 			this._update()
 		}, 2000)
 	}
 	render() {
-		return this.isTrue ? h(Component1) : h(Component2)
+		return h(MyFunctionalCom, {
+			text: this.localState
+		})
 	}
 }
 const compVNode = h(ParentComponent)
