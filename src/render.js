@@ -61,36 +61,10 @@ function mountElement(vnode, container, isSVG) {
   // 拿到 VNodeData
   const data = vnode.data;
   if (data) {
-    // 如果data存在，则遍历   2、将VNodeData应用到真实DOM元素上
-    for (let key in data) {
-      // key可能是class、style、on等等
-      switch (key) {
-        case "style":
-          // 如果 key 的值是 style，说明是内联样式，逐个将样式规则应用到 el
-          for (let k in data.style) {
-            el.style[k] = data.style[k];
-          }
-          break;
-        case "class":
-          el.className = dynamicClass(data[key]);
-          break;
-        default:
-          // 事件处理
-          if (key[0] === "o" && key[1] === "n") {
-            el.addEventListener(key.slice(2), data[key]);
-            // 注：如此一来，所有以 'on' 开头的属性都被判定为事件
-          } else if (domPropsRE.test(key)) {
-            // 当做 DOM Prop处理
-            el[key] = data[key];
-          } else {
-            // 当作 Attr 处理
-            el.setAttribute(key, data[key]);
-          }
-          break;
-      }
-    }
+	for (let key in data) {
+		patchData(el, key, null, data[key])
+	}
   }
-
   // 3、继续挂载子节点
   // 拿到children 和 childFlags
   const childFlags = vnode.childFlags;
@@ -122,11 +96,9 @@ function mountComponent(vnode, container, isSVG) {
 // 挂载有状态组件
 function mountStatefulComponent(vnode, container, isSVG) {
 	// 1、创建组件实例
-	const instance = new vnode.tag
-
+	const instance = (vnode.children = new vnode.tag())
 	// 初始化 props
 	instance.$props = vnode.data
-
 	instance._update = function() {
 		// 如果instance_mounted为真，说明组件已经挂载，应该执行更新操作
 		if (instance._mounted) {
@@ -224,25 +196,25 @@ function dynamicClass(className) {
 	}
 	if (typeof className === "object") {
 		if (Array.isArray(className)) {
-		let str = "";
-		for (let i = 0; i < className.length; i++) {
-			if (typeof className[i] === "string") {
-			str += className[i] + " ";
-			} else if (typeof className[i] === "object") {
-			str += dynamicClass(className[i]);
+			let str = "";
+			for (let i = 0; i < className.length; i++) {
+				if (typeof className[i] === "string") {
+					str += className[i] + " ";
+				} else if (typeof className[i] === "object") {
+					str += dynamicClass(className[i]);
+				}
 			}
-		}
-		return str || "";
+			return str || "";
 		} else {
-		let str = "";
-		for (let key in className) {
-			if (typeof className[key] === "boolean" && className[key]) {
-			str += key + " ";
-			} else if (typeof className[key] === "object") {
-			str += dynamicClass(className[key]);
+			let str = "";
+			for (let key in className) {
+				if (typeof className[key] === "boolean" && className[key]) {
+					str += key + " ";
+				} else if (typeof className[key] === "object") {
+					str += dynamicClass(className[key]);
+				}
 			}
-		}
-		return str || "";
+			return str || "";
 		}
 	}
 	return "";

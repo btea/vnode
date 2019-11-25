@@ -719,7 +719,21 @@ function patchPortal(prevVNode, nextVNode) {
           container.appendChild(nextVNode.children[i].el);
         }
 
+        break;
     }
+  }
+} // 更新 Component
+
+
+function patchComponent(prevVNode, nextVNode, container) {
+  // 检查组件是否是有状态组件
+  if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+    // 1、获取组件实例
+    var instance = nextVNode.children = prevVNode.children; // 2、更新props
+
+    instance.$props = nextVNode.data; // 3、更新组件
+
+    instance._update();
   }
 }
 },{"./flags":"src/flags.js","./render":"src/render.js","./patchData":"src/patchData.js","./patchChildren":"src/patchChildren.js"}],"src/render.js":[function(require,module,exports) {
@@ -804,36 +818,8 @@ function mountElement(vnode, container, isSVG) {
   var data = vnode.data;
 
   if (data) {
-    // 如果data存在，则遍历   2、将VNodeData应用到真实DOM元素上
     for (var key in data) {
-      // key可能是class、style、on等等
-      switch (key) {
-        case "style":
-          // 如果 key 的值是 style，说明是内联样式，逐个将样式规则应用到 el
-          for (var k in data.style) {
-            el.style[k] = data.style[k];
-          }
-
-          break;
-
-        case "class":
-          el.className = dynamicClass(data[key]);
-          break;
-
-        default:
-          // 事件处理
-          if (key[0] === "o" && key[1] === "n") {
-            el.addEventListener(key.slice(2), data[key]); // 注：如此一来，所有以 'on' 开头的属性都被判定为事件
-          } else if (domPropsRE.test(key)) {
-            // 当做 DOM Prop处理
-            el[key] = data[key];
-          } else {
-            // 当作 Attr 处理
-            el.setAttribute(key, data[key]);
-          }
-
-          break;
-      }
+      patchData(el, key, null, data[key]);
     }
   } // 3、继续挂载子节点
   // 拿到children 和 childFlags
@@ -870,7 +856,7 @@ function mountComponent(vnode, container, isSVG) {
 
 function mountStatefulComponent(vnode, container, isSVG) {
   // 1、创建组件实例
-  var instance = new vnode.tag(); // 初始化 props
+  var instance = vnode.children = new vnode.tag(); // 初始化 props
 
   instance.$props = vnode.data;
 
@@ -1236,6 +1222,28 @@ function () {
 // const compVNode = h(MyComponent)
 
 /****    $props   ****/
+// class ChildComponent{
+// 	render() {
+// 		// 通过 this.$props.text访问外部数据
+// 		return h('div', null, this.$props.text)
+// 	}
+// }
+// class ParentComponent{
+// 	// localState = 'one'
+// 	constructor(){
+// 		this.localState = 'one'
+// 	}
+// 	render() {
+// 		const childCompVNode = h(ChildComponent, {
+// 			text: this.localState
+// 		})
+// 		return childCompVNode
+// 	}
+// }
+// const compVNode = h(ParentComponent)
+
+/****    被动更新    ****/
+// 被动更新指的是由外部状态变化而引起的更新操作，通常父组件自身状态的变化可能会引起子组件的更新，
 
 
 var ChildComponent =
@@ -1248,7 +1256,6 @@ function () {
   _createClass(ChildComponent, [{
     key: "render",
     value: function render() {
-      // 通过 this.$props.text访问外部数据
       return (0, _h.h)('div', null, this.$props.text);
     }
   }]);
@@ -1259,7 +1266,6 @@ function () {
 var ParentComponent =
 /*#__PURE__*/
 function () {
-  // localState = 'one'
   function ParentComponent() {
     _classCallCheck(this, ParentComponent);
 
@@ -1267,11 +1273,23 @@ function () {
   }
 
   _createClass(ParentComponent, [{
+    key: "mounted",
+    value: function mounted() {
+      var _this2 = this;
+
+      setTimeout(function () {
+        _this2.localState = 'two';
+
+        _this2._update();
+      }, 2000);
+    }
+  }, {
     key: "render",
     value: function render() {
       var childCompVNode = (0, _h.h)(ChildComponent, {
         text: this.localState
       });
+      console.log(childCompVNode);
       return childCompVNode;
     }
   }]);
@@ -1279,9 +1297,9 @@ function () {
   return ParentComponent;
 }();
 
-var compVNode = (0, _h.h)(ParentComponent);
-console.log(compVNode);
-return;
+var compVNode = (0, _h.h)(ParentComponent); // console.log(compVNode)
+// return
+
 (0, _render.render)(compVNode, document.getElementById('app'));
 },{"./styles.css":"src/styles.css","./h":"src/h.js","./render":"src/render.js","./Fragment":"src/Fragment.js","./Portal":"src/Portal.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -1311,7 +1329,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65245" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53658" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

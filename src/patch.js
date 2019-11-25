@@ -137,6 +137,20 @@ function patchPortal(prevVNode, nextVNode) {
 				for (let i = 0; i < nextVNode.children.length; i++) {
 					container.appendChild(nextVNode.children[i].el)
 				}
+				break
 		}
+	}
+}
+
+// 更新 Component
+function patchComponent(prevVNode, nextVNode, container) {
+	// 检查组件是否是有状态组件
+	if (nextVNode.flags & VNodeFlags.COMPONENT_STATEFUL_NORAMAL) {
+		// 1、获取组件实例
+		const instance = (nextVNode.children = prevVNode.children)
+		// 2、更新props
+		instance.$props = nextVNode.data
+		// 3、更新组件
+		instance._update()
 	}
 }

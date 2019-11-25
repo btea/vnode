@@ -214,29 +214,60 @@ class MyComponent {
 
 
 /****    $props   ****/
+// class ChildComponent{
+// 	render() {
+// 		// 通过 this.$props.text访问外部数据
+// 		return h('div', null, this.$props.text)
+// 	}
+// }
+// class ParentComponent{
+// 	// localState = 'one'
+// 	constructor(){
+// 		this.localState = 'one'
+// 	}
+
+// 	render() {
+// 		const childCompVNode = h(ChildComponent, {
+// 			text: this.localState
+// 		})
+// 		return childCompVNode
+// 	}
+// }
+
+// const compVNode = h(ParentComponent)
+
+
+/****    被动更新    ****/
+// 被动更新指的是由外部状态变化而引起的更新操作，通常父组件自身状态的变化可能会引起子组件的更新，
 class ChildComponent{
 	render() {
-		// 通过 this.$props.text访问外部数据
 		return h('div', null, this.$props.text)
 	}
 }
 class ParentComponent{
-	// localState = 'one'
 	constructor(){
 		this.localState = 'one'
+	}
+
+	mounted() {
+		setTimeout(() => {
+			this.localState = 'two'
+			this._update()
+		}, 2000)
 	}
 
 	render() {
 		const childCompVNode = h(ChildComponent, {
 			text: this.localState
 		})
+		console.log(childCompVNode)
 		return childCompVNode
 	}
 }
-
 const compVNode = h(ParentComponent)
-console.log(compVNode)
-return
+// console.log(compVNode)
+// return
+
 render(compVNode, document.getElementById('app'))
 
 
