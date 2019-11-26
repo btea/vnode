@@ -399,8 +399,7 @@ const nextVNode = h('div', null, [
 ])
 
 render(prevVNode, document.getElementById('app'))
-  
-  // 2秒后更新
+// 2秒后更新
 setTimeout(() => {
 	render(nextVNode, document.getElementById('app'))
 }, 2000)
