@@ -129,6 +129,20 @@ export default function patchChildren(
 							mount(nextVNode, container, false, refNode)
 						}
 					}
+
+					// 移除已经不存在的节点
+					// 遍历旧节点
+					for (let i = 0; i < prevChildren.length; i++) {
+						const prevVNode = prevChildren[i]
+						// 拿旧 VNode 去新 children中寻找相同的节点
+						const has = nextChildren.find(
+							nextVNode => nextVNode.key === prevNode.key
+						)
+						if (!has) {
+							container.removeChild(prevVNode.el)
+						}
+					}
+
 					break
 			}
 			break
