@@ -102,11 +102,12 @@ export default function patchChildren(
 					// 遍历新的children
 					for (let i = 0; i < nextChildren; i++) {
 						const nextVNode = nextChildren[i]
-						let j = 0
+						let j = 0, find = false  // find 用来判断新的 children中 当前节点是否存在于旧的 children 中 
 						for (j; j < prevChildren; j++) {
 							const prevVNode = prevChildren[j]
 							// 如果找到了具有相同 key 值的两个节点， 则调用 patch 函数更新
 							if (nextVNode.key === prevVNode.key) {
+								find = true
 								patch(prevVNode, nextVNode, container)
 								if (j < lastIndex) {
 									// 需移动
@@ -120,6 +121,12 @@ export default function patchChildren(
 								}
 								break
 							}
+						}
+						if (!find) {
+							// 挂载新节点
+							// 找到 refNode
+							const refNode = i - 1 < 0 ? prevChildren[0].el : nextChildren[i - 1].el.nextSibling
+							mount(nextVNode, container, false, refNode)
 						}
 					}
 					break

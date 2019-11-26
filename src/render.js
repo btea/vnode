@@ -27,11 +27,11 @@ export function render(vnode, container) {
   }
 }
 
-export function mount(vnode, container, isSVG) {
+export function mount(vnode, container, isSVG, refNode) {
   const { flags } = vnode;
   if (flags & VNodeFlags.ELEMENT_HTML) {
     // 挂载普通标签
-    mountElement(vnode, container, isSVG);
+    mountElement(vnode, container, isSVG, refNode);
   } else if (flags & VNodeFlags.COMPONENT) {
     // 挂载组件
     mountComponent(vnode, container, isSVG);
@@ -50,7 +50,7 @@ export function mount(vnode, container, isSVG) {
 // 处理VNodeData中除 class 和 style 之外的全部数据，当然也要排除 VNodeData中的target属性，因为它只适用于 Portal
 const domPropsRE = /\[A-Z]|^(?:value|checked|slected|muted)$/;
 
-function mountElement(vnode, container, isSVG) {
+function mountElement(vnode, container, isSVG, refNode) {
   // 注：运算符优先级  逻辑或 5 (||)从左到右  按位与 9(&) 从左到右
 
   // 4、处理SVG标签
@@ -82,8 +82,8 @@ function mountElement(vnode, container, isSVG) {
       }
     }
   }
-  // 处理svg标签
-  container.appendChild(el); //
+  refNode ? container.insertBefore(el, refNode) : container.appendChild(el)
+//   container.appendChild(el);
 }
 
 // 挂载组件
