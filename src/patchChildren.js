@@ -94,12 +94,34 @@ export default function patchChildren(
 						for (let i = commonLength; i < prevLen; i++) {
 							container.removeChild(prevChildren[i].el)
 						}
-						container.removeChild()
 					}
 
-
-
-
+					/**  利用 key 进行优化 **/
+					// 用来存储寻找过程中遇到的最大索引值
+					let lastIndex = 0
+					// 遍历新的children
+					for (let i = 0; i < nextChildren; i++) {
+						const nextVNode = nextChildren[i]
+						let j = 0
+						for (j; j < prevChildren; j++) {
+							const prevVNode = prevChildren[j]
+							// 如果找到了具有相同 key 值的两个节点， 则调用 patch 函数更新
+							if (nextVNode.key === prevVNode.key) {
+								patch(prevVNode, nextVNode, container)
+								if (j < lastIndex) {
+									// 需移动
+									// refNode 是为了下面调用 insertBefore 函数准备的
+									const refNode = nextChildren[i - 1].el.nextSibling
+									// 利用insertBefore函数移动 DOM
+									container.insertBefore(prevVNode.el, refNode)
+								} else {
+									// 更新lastIndex
+									lastIndex = j
+								}
+								break
+							}
+						}
+					}
 					break
 			}
 			break

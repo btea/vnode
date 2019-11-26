@@ -1,5 +1,6 @@
 import flags from "./flags";
 import { patch } from "./patch";
+import patchData from './patchData'
 const { VNodeFlags, ChildrenFlags } = flags;
 import { createTextVNode } from './h'
 
