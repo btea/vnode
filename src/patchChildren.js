@@ -142,6 +142,37 @@ export default function patchChildren(
 						}
 					}
 
+
+
+					/****      双端比较      ****/
+					let oldStartIdx  = 0
+					let oldEndIdx    = prevChildren.length - 1
+					let newStartIdx  = 0
+					let newEndIdx    = nextChildren.length - 1
+					
+					let oldStartVNode = prevChildren[oldStartIdx]
+					let oldEndVNode   = prevChildren[oldEndIdx]
+					let newStartVNode = nextChildren[newStartIdx]
+					let newEndVNode   = nextChildren[newEndIdx]
+
+					while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+						if (oldStartVNode.key === newStartVNode.key) {
+							// 步骤一：oldStartVNode 与 newStartVNode 对比
+						} else if (oldEndVNode.key === newEndVNode.key) {
+							// 步骤二：oldEndVNode 与 newEndVNode 对比
+						} else if (oldStartVNode.key === newEndVNode.key) {
+							// 步骤三：oldStartVNode 与 newEndVNode 对比
+						} else if (oldEndVNode.key === newStartVNode.key) {
+							// 步骤四：oldEndVNode 与 newStartVNode 对比
+							// 先调用 patch 函数完成更新
+							patch(oldEndVNode, newStartVNode, container)
+							// 更新完成后，将容器中最后一个子节点移动到最前面，使其成为第一个子节点
+							container.insertBefore(oldEndVNode.el, oldStartVNode.el)
+							// 更新索引，指向下一位置
+							oldEndVNode = prevChildren[--oldEndIdx]
+							newStartVNode = nextChildren[++newStartIdx]
+						}
+					}
 					break
 			}
 			break
