@@ -158,10 +158,29 @@ export default function patchChildren(
 					while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
 						if (oldStartVNode.key === newStartVNode.key) {
 							// 步骤一：oldStartVNode 与 newStartVNode 对比
+
+							// 调用 patch 函数更新
+							patch(oldStartVNode, newStartVNode, container)
+							// 更新索引，指向下一个位置
+							oldStartVNode = prevChildren[++oldStartIdx]
+							newStartVNode = nextChildren[++newStartIdx]
 						} else if (oldEndVNode.key === newEndVNode.key) {
 							// 步骤二：oldEndVNode 与 newEndVNode 对比
+
+							// 调用 patch 函数更新
+							patch(oldEndVNode, newEndVNode, container)
+							oldEndVNode = prevChildren[--oldEndIdx]
+							newEndVNode = nextChildren[--newEndIdx]
 						} else if (oldStartVNode.key === newEndVNode.key) {
 							// 步骤三：oldStartVNode 与 newEndVNode 对比
+
+							// 调用 patch 函数更新
+							patch(oldStartVNode, newEndVNode, container)
+							// 将 oldStartVNode.el 移动到 oldEndVNode.el 的后面，也就是 oldEndVNode.el.nextSibling的前面
+							container.insertBefore(oldStartVNode.el, oldEndVNode.el.nextSibling)
+							// 更新索引，指向下一个位置
+							oldStartVNode = prevChildren[++oldStartIdx]
+							newEndVNode = nextChildren[--newEndIdx]
 						} else if (oldEndVNode.key === newStartVNode.key) {
 							// 步骤四：oldEndVNode 与 newStartVNode 对比
 							// 先调用 patch 函数完成更新

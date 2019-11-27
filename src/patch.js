@@ -61,7 +61,7 @@ function patchElement(prevVNode, nextVNode, container) {
 	}
 
 	if (prevData) {
-		// 遍历旧的 VNodeData，将不存在与新的 VNodeData 中的数据移除
+		// 遍历旧的 VNodeData，将不存在于新的 VNodeData 中的数据移除
 		for (let key in prevData) {
 			const prevValue = prevData[key]
 			if (prevValue && !nextData.hasOwnProperty(key)) {
