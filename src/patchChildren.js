@@ -156,7 +156,11 @@ export default function patchChildren(
 					let newEndVNode   = nextChildren[newEndIdx]
 
 					while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-						if (oldStartVNode.key === newStartVNode.key) {
+						if (!oldStartVNode) {
+							oldStartVNode = prevChildren[++oldStartIdx]
+						} else if (!oldEndVNode) {
+							oldEndVNode = prevChildren[--oldEndIdx]
+						}else if (oldStartVNode.key === newStartVNode.key) {
 							// 步骤一：oldStartVNode 与 newStartVNode 对比
 
 							// 调用 patch 函数更新
@@ -189,6 +193,23 @@ export default function patchChildren(
 							container.insertBefore(oldEndVNode.el, oldStartVNode.el)
 							// 更新索引，指向下一位置
 							oldEndVNode = prevChildren[--oldEndIdx]
+							newStartVNode = nextChildren[++newStartIdx]
+						} else {
+							// 遍历旧 children，视图寻找与 newStartVNode 拥有相同 key 的元素
+							const idxInOld = prevChildren.findIndex(
+								node => node.key === newStartVNode.key
+							)
+							if (idxInOld > 0) {
+								// vnodeToMove 就是在旧 children 中找到的节点，该节点对应的真实 DOM 应该被移动到最前面
+								const vnodeToMove = prevChildren[idxInOld]
+								// 调用 patch 函数完成更新
+								patch(vnodeToMove, newStartVNode, container)
+								// 把 vnodeToMove.el 移动到最前面，即 oldStartVNode.el 的前面
+								container.insertBefore(vnodeToMove.el, oldStartVNode.el)
+								// 由于旧 children 中该位置的节点所对应的真实 DOM 已经被移动，所以将其设置为 undefined
+								prevChildren[idxInOld] = void 0
+							}
+							// 将 newStartIdx 下移一位
 							newStartVNode = nextChildren[++newStartIdx]
 						}
 					}
