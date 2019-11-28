@@ -98,51 +98,49 @@ export default function patchChildren(
 
 					/**  利用 key 进行优化 **/
 					// 用来存储寻找过程中遇到的最大索引值
-					let lastIndex = 0
-					// 遍历新的children
-					for (let i = 0; i < nextChildren.length; i++) {
-						const nextVNode = nextChildren[i]
-						let j = 0, find = false  // find 用来判断新的 children中 当前节点是否存在于旧的 children 中 
-						for (j; j < prevChildren.length; j++) {
-							const prevVNode = prevChildren[j]
-							// 如果找到了具有相同 key 值的两个节点， 则调用 patch 函数更新
-							if (nextVNode.key === prevVNode.key) {
-								find = true
-								patch(prevVNode, nextVNode, container)
-								if (j < lastIndex) {
-									// 需移动
-									// refNode 是为了下面调用 insertBefore 函数准备的
-									const refNode = nextChildren[i - 1].el.nextSibling
-									// 利用insertBefore函数移动 DOM
-									container.insertBefore(prevVNode.el, refNode)
-								} else {
-									// 更新lastIndex
-									lastIndex = j
-								}
-								break
-							}
-						}
-						if (!find) {
-							// 挂载新节点
-							// 找到 refNode
-							const refNode = i - 1 < 0 ? prevChildren[0].el : nextChildren[i - 1].el.nextSibling
-							mount(nextVNode, container, false, refNode)
-						}
-					}
-					// 移除已经不存在的节点
-					// 遍历旧节点
-					for (let i = 0; i < prevChildren.length; i++) {
-						const prevVNode = prevChildren[i]
-						// 拿旧 VNode 去新 children中寻找相同的节点
-						const has = nextChildren.find(
-							nextVNode => nextVNode.key === prevVNode.key
-						)
-						if (!has) {
-							container.removeChild(prevVNode.el)
-						}
-					}
-
-
+					// let lastIndex = 0
+					// // 遍历新的children
+					// for (let i = 0; i < nextChildren.length; i++) {
+					// 	const nextVNode = nextChildren[i]
+					// 	let j = 0, find = false  // find 用来判断新的 children中 当前节点是否存在于旧的 children 中 
+					// 	for (j; j < prevChildren.length; j++) {
+					// 		const prevVNode = prevChildren[j]
+					// 		// 如果找到了具有相同 key 值的两个节点， 则调用 patch 函数更新
+					// 		if (nextVNode.key === prevVNode.key) {
+					// 			find = true
+					// 			patch(prevVNode, nextVNode, container)
+					// 			if (j < lastIndex) {
+					// 				// 需移动
+					// 				// refNode 是为了下面调用 insertBefore 函数准备的
+					// 				const refNode = nextChildren[i - 1].el.nextSibling
+					// 				// 利用insertBefore函数移动 DOM
+					// 				container.insertBefore(prevVNode.el, refNode)
+					// 			} else {
+					// 				// 更新lastIndex
+					// 				lastIndex = j
+					// 			}
+					// 			break
+					// 		}
+					// 	}
+					// 	if (!find) {
+					// 		// 挂载新节点
+					// 		// 找到 refNode
+					// 		const refNode = i - 1 < 0 ? prevChildren[0].el : nextChildren[i - 1].el.nextSibling
+					// 		mount(nextVNode, container, false, refNode)
+					// 	}
+					// }
+					// // 移除已经不存在的节点
+					// // 遍历旧节点
+					// for (let i = 0; i < prevChildren.length; i++) {
+					// 	const prevVNode = prevChildren[i]
+					// 	// 拿旧 VNode 去新 children中寻找相同的节点
+					// 	const has = nextChildren.find(
+					// 		nextVNode => nextVNode.key === prevVNode.key
+					// 	)
+					// 	if (!has) {
+					// 		container.removeChild(prevVNode.el)
+					// 	}
+					// }
 
 					/****      双端比较      ****/
 					let oldStartIdx  = 0
@@ -208,11 +206,32 @@ export default function patchChildren(
 								container.insertBefore(vnodeToMove.el, oldStartVNode.el)
 								// 由于旧 children 中该位置的节点所对应的真实 DOM 已经被移动，所以将其设置为 undefined
 								prevChildren[idxInOld] = void 0
+							} else {
+								// 这是新增节点，在旧 children 中没有，使用 mount 函数挂载新节点
+								mount(newStartVNode, container, false, oldStartVNode.el) 
 							}
 							// 将 newStartIdx 下移一位
 							newStartVNode = nextChildren[++newStartIdx]
 						}
 					}
+					
+					if (oldEndIdx < oldStartIdx) {
+						// 添加新节点
+						// 栗子
+						// 旧children  [li-a, li-b, li-c]
+						// 新children  [li-d, li-a, li-b, li-c]
+						for (let i = newStartIdx; i < newEndIdx; i++) {
+							mount(nextChildren[i], container, false, oldStartVNode.el)
+						}
+					} else if (newEndIdx < newStartIdx) {
+						// 移除操作
+						// 栗子
+						// 旧children  [li-a, li-b, li-c]
+						// 新children  [li-a, li-c]
+						for (let i = oldStartIdx; i < oldEndIdx; i++) {
+							container.removeChild(prevChildren[i].el)
+						}
+					} 
 					break
 			}
 			break
