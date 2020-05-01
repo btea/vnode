@@ -1,3 +1,4 @@
-.cache
-.history
-node_modules
+/.cache
+/.history
+/node_modules
+/dist
