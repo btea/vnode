@@ -5,6 +5,7 @@ import patchChildren from './patchChildren'
 
 const {VNodeFlags, ChildrenFlags} = flags
 export function patch(prevVNode, nextVNode, container) {
+	debugger
 	// 分别拿到新旧 VNode 的类型，即 flags
 	const nextFlags = nextVNode.flags
 	const prevFlags = prevVNode.flags

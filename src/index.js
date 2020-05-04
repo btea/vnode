@@ -450,7 +450,7 @@ class MyComponent {
 
 // 旧的 VNode
 const prevVNode = h('div', null, [
-	h('p', { key: 'a' }, '节点1'),
+	h('p', { key: 'a' , onclick: function() {console.log('节点1的点击事件'); refresh()}}, '节点1'),
 	h('p', { key: 'b' }, '节点2'),
 	h('p', { key: 'c' }, '节点3'),
 	h('p', { key: 'd' }, '节点4'),
@@ -461,7 +461,7 @@ const prevVNode = h('div', null, [
   
 // 新的 VNode
 const nextVNode = h('div', null, [
-	h('p', { key: 'a' }, 'new 节点1'),
+	h('p', { key: 'a', onclick: function() {console.log('新的点击事件')} }, 'new 节点1'),
 	h('p', { key: 'c' }, 'new 节点3'),
 	h('p', { key: 'd' }, 'new 节点4'),
 	h('p', { key: 'b' }, 'new 节点2'),
@@ -472,6 +472,8 @@ const nextVNode = h('div', null, [
 render(prevVNode, document.getElementById('app'))
   
 // 2秒后更新
-setTimeout(() => {
-	render(nextVNode, document.getElementById('app'))
-}, 2000)
+function refresh() {
+	setTimeout(() => {
+		render(nextVNode, document.getElementById('app'))
+	}, 2000)
+}

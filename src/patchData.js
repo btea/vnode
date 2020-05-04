@@ -21,7 +21,7 @@ export default function patchData(el, key, prevValue, nextValue) {
 			if (key[0] === 'o' && key[1] === 'n') {
 				// 移除旧事件
 				if (prevValue) {
-					el.addEventListener(key.slice(2), prevValue)
+					el.removeEventListener(key.slice(2), prevValue)
 				}
 				// 添加新事件
 				if (nextValue) {

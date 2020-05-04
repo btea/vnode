@@ -67,7 +67,7 @@ export default function patchChildren(
 					}
 					break
 				default:
-					// 新的 children 有多个子节点   DIFF
+					// 新的 children 有多个子节点   DIFF（简单的diff算法）
 					// 遍历旧的子节点，将其全部移除
 					// for (let i = 0; i < prevChildren.length; i++) {
 					// 	container.removeChild(prevChildren[i].el)
@@ -96,7 +96,7 @@ export default function patchChildren(
 					// 	}
 					// }
 
-					/**  利用 key 进行优化 **/
+					/**  利用 key 进行优化 **/  // React所用的算法
 					// 用来存储寻找过程中遇到的最大索引值
 					// let lastIndex = 0
 					// // 遍历新的children
