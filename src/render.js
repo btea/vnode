@@ -69,11 +69,15 @@ function mountElement(vnode, container, isSVG, refNode) {
   // 3、继续挂载子节点
   // 拿到children 和 childFlags
   const childFlags = vnode.childFlags;
-  const children = vnode.children;
+  let children = vnode.children;
+
   // 检测如果没有子节点则无需递归挂载
   if (childFlags !== ChildrenFlags.NO_CHILDREN) {
     if (childFlags & ChildrenFlags.SINGLE_VNODE) {
-      // 单个子节点则调用mount挂载
+	  // 单个子节点则调用mount挂载,此时可能是一个数组里面吧包含一个子节点，也可能是一个文本子节点
+	  if (Array.isArray(children)) {
+		  children = children[0]
+	  }
       mount(children, el, isSVG); // 把isSvg传递下去，方便后续判断渲染svg里面circle等元素tag不等于svg时渲染svg标签
     } else if (childFlags & ChildrenFlags.MULTIPLE_VNODES) {
       // 如果是多个子节点，则遍历并调用 mount 函数挂载
@@ -82,6 +86,7 @@ function mountElement(vnode, container, isSVG, refNode) {
       }
     }
   }
+  console.log(el)
   refNode ? container.insertBefore(el, refNode) : container.appendChild(el)
 //   container.appendChild(el);
 }
