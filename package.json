@@ -1,15 +1,12 @@
 {
-  "name": "parcel-sandbox",
-  "version": "1.0.0",
-  "description": "Simple Parcel Sandbox",
-  "main": "index.html",
-  "scripts": {
-    "start": "parcel index.html --open",
-    "build": "parcel build index.html"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "@babel/core": "7.2.0",
-    "parcel-bundler": "^1.6.1"
-  }
+    "name": "vite-sandbox",
+    "version": "1.0.0",
+    "description": "Simple Vite Sandbox",
+    "main": "index.html",
+    "scripts": {
+        "start": "vite"
+    },
+    "devDependencies": {
+        "vite": "^2.4.4"
+    }
 }
